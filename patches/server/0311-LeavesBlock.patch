@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BuildTools <unconfigured@null.spigotmc.org>
+Date: Fri, 9 Jun 2023 20:58:47 -0400
+Subject: [PATCH] LeavesBlock
+
+
+diff --git a/src/main/java/net/minecraft/world/level/block/LeavesBlock.java b/src/main/java/net/minecraft/world/level/block/LeavesBlock.java
+index ae94ac1707d0340f7535f74652e3f37f0361ba22..9b4e5f0888044538285d3dbff8a92c20c8a0d39c 100644
+--- a/src/main/java/net/minecraft/world/level/block/LeavesBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/LeavesBlock.java
+@@ -5,7 +5,6 @@ import net.minecraft.core.Direction;
+ import net.minecraft.core.particles.ParticleTypes;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.tags.BlockTags;
+-import net.minecraft.util.ParticleUtils;
+ import net.minecraft.util.RandomSource;
+ import net.minecraft.world.item.context.BlockPlaceContext;
+ import net.minecraft.world.level.BlockGetter;
+@@ -84,12 +83,13 @@ public class LeavesBlock extends Block implements SimpleWaterloggedBlock {
+             world.scheduleTick(pos, (Fluid) Fluids.WATER, Fluids.WATER.getTickDelay(world));
+         }
+ 
+-        int i = LeavesBlock.getDistanceAt(neighborState) + 1;
++        if ((Boolean) !state.getValue(LeavesBlock.PERSISTENT)) {
++            int i = LeavesBlock.getDistanceAt(neighborState) + 1;
+ 
+-        if (i != 1 || (Integer) state.getValue(LeavesBlock.DISTANCE) != i) {
+-            world.scheduleTick(pos, (Block) this, 1);
++            if (i != 1 || (Integer) state.getValue(LeavesBlock.DISTANCE) != i) {
++                world.scheduleTick(pos, (Block) this, 1);
++            }
+         }
+-
+         return state;
+     }
+ 
+@@ -109,7 +109,7 @@ public class LeavesBlock extends Block implements SimpleWaterloggedBlock {
+             }
+         }
+ 
+-        return (BlockState) state.setValue(LeavesBlock.DISTANCE, i);
++        return (Boolean) state.getValue(LeavesBlock.PERSISTENT) ? state : (BlockState) state.setValue(LeavesBlock.DISTANCE, i);
+     }
+ 
+     private static int getDistanceAt(BlockState state) {
+@@ -121,7 +121,6 @@ public class LeavesBlock extends Block implements SimpleWaterloggedBlock {
+         return (Boolean) state.getValue(LeavesBlock.WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
+     }
+ 
+-    @Override
+     public void animateTick(BlockState state, Level world, BlockPos pos, RandomSource random) {
+         if (world.isRainingAt(pos.above())) {
+             if (random.nextInt(15) == 1) {
+@@ -129,7 +128,11 @@ public class LeavesBlock extends Block implements SimpleWaterloggedBlock {
+                 BlockState iblockdata1 = world.getBlockState(blockposition1);
+ 
+                 if (!iblockdata1.canOcclude() || !iblockdata1.isFaceSturdy(world, blockposition1, Direction.UP)) {
+-                    ParticleUtils.spawnParticleBelow(world, pos, random, ParticleTypes.DRIPPING_WATER);
++                    double d0 = (double) pos.getX() + random.nextDouble();
++                    double d1 = (double) pos.getY() - 0.05D;
++                    double d2 = (double) pos.getZ() + random.nextDouble();
++
++                    world.addParticle(ParticleTypes.DRIPPING_WATER, d0, d1, d2, 0.0D, 0.0D, 0.0D);
+                 }
+             }
+         }
